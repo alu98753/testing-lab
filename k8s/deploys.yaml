@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: ghcr.io/alu98753/backend:latest
+          ports:
+            - containerPort: 8888
+          env:
+            - name: PORT
+              value: "8888"
+            - name: HOST
+              value: "0.0.0.0"
+            - name: MONGO_CONNECTION_STRING
+              value: "mongodb://mongo:27017/myMernApp"
+          livenessProbe:
+            httpGet:
+              path: /api/todos
+              port: 8888
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: ghcr.io/alu98753/frontend:latest
+          ports:
+            - containerPort: 80
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      containers:
+        - name: mongo
+          image: mongo:5.0
+          ports:
+            - containerPort: 27017
+          volumeMounts:
+            - mountPath: /data/db
+              name: mongo-persistent-storage
+          livenessProbe:
+            exec:
+              command:
+                - mongo
+                - --eval
+                - db.adminCommand('ping')
+            initialDelaySeconds: 10
+            periodSeconds: 30
+      volumes:
+        - name: mongo-persistent-storage
+          emptyDir: {}
