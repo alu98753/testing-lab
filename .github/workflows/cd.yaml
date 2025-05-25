@@ -1,0 +1,50 @@
+name: CD Workflow
+
+on:
+  pull_request:
+    types: [closed] # Trigger when a PR is closed
+    branches:
+      - 'main' # Only for PRs targeting the main branch
+
+jobs:
+  build-and-push-images:
+    name: Build and Push Docker Images
+    # Only run if the PR was merged into main
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read   # To checkout the code
+      packages: write  # To push packages (Docker images) to ghcr.io
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }} # or your GitHub username directly: alu98753
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # --- Build and Push Frontend Image ---
+      - name: Build and Push Frontend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend # Context is the frontend directory
+          file: ./frontend/Dockerfile # Path to Dockerfile
+          push: true
+          tags: |
+            ghcr.io/alu98753/frontend:latest
+            ghcr.io/alu98753/frontend:${{ github.sha }}
+
+      # --- Build and Push Backend Image ---
+      - name: Build and Push Backend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend # Context is the backend directory
+          file: ./backend/Dockerfile # Path to Dockerfile
+          push: true
+          tags: |
+            ghcr.io/alu98753/backend:latest
+            ghcr.io/alu98753/backend:${{ github.sha }}
