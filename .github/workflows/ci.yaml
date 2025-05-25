@@ -46,6 +46,13 @@ jobs:
           path: frontend/coverage/lcov.info
           if-no-files-found: error
 
+      - name: Check frontend coverage directory
+        working-directory: ./frontend
+        run: ls -R coverage || echo "No coverage folder found"
+
+      - name: Print frontend lcov file
+        working-directory: ./frontend
+        run: cat coverage/lcov.info || echo "lcov.info not found"
 
       # --- Backend ---
       - name: Backend - Install dependencies
