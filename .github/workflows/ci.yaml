@@ -8,6 +8,9 @@ on:
     branches:
       - 'main'
 
+permissions:
+  contents: write
+
 jobs:
   test-and-coverage:
     name: Run Tests & Generate Coverage Report
@@ -90,10 +93,11 @@ jobs:
         run: |
           npm install
           npm run format
-
-      - name: Commit changes
+          
+      - name: Commit formatted code
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "style: auto-format code [CI]"
-          # This action automatically checks for changes and commits only if there are any.
-          # It respects .prettierignore if Prettier is used.
+          commit_user_name: github-actions[bot]
+          commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com
+          token: ${{ secrets.GITHUB_TOKEN }}
