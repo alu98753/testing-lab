@@ -8,7 +8,7 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "test:e2e": "playwright test",
-    "test": "vitest run",
+    "test": "vitest run --coverage.enabled=true --coverage.reporter=lcov --coverage.reportsDirectory=coverage",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,json}\""
   },
   "dependencies": {

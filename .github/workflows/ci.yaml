@@ -33,14 +33,19 @@ jobs:
 
       - name: Frontend - Run tests and generate coverage
         working-directory: ./frontend
-        run: npm run test # Ensure this script generates coverage in frontend/coverage/
+        run: npm run test
+
+      - name: Debug - Check frontend coverage folder
+        working-directory: ./frontend
+        run: ls -alh coverage
 
       - name: Frontend - Upload Coverage Report (LCOV)
         uses: actions/upload-artifact@v4
         with:
           name: frontend-lcov-report
-          path: frontend/coverage/lcov.info # Specific path to lcov.info
+          path: frontend/coverage/lcov.info
           if-no-files-found: error
+
 
       # --- Backend ---
       - name: Backend - Install dependencies
@@ -104,7 +109,7 @@ jobs:
 
       - name: Wait for coverage file to be written
         run: sleep 2
-        
+
       - name: Upload Coverage to Codecov (Frontend)
         uses: codecov/codecov-action@v4
         with:
