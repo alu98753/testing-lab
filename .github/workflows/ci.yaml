@@ -102,6 +102,9 @@ jobs:
           commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Wait for coverage file to be written
+        run: sleep 2
+        
       - name: Upload Coverage to Codecov (Frontend)
         uses: codecov/codecov-action@v4
         with:
