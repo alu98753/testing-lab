@@ -1,0 +1,8 @@
+# .prettierignore
+Dockerfile
+nginx.conf
+*.html
+*.css
+package-lock.json
+*.svg
+README.md

@@ -1,0 +1,135 @@
+name: CI Workflow
+
+on:
+  push: # Trigger on new commits to any branch except main
+    branches-ignore:
+      - 'main'
+  pull_request: # Trigger on new or updated PRs targeting main
+    branches:
+      - 'main'
+
+permissions:
+  contents: write
+
+jobs:
+  test-and-coverage:
+    name: Run Tests & Generate Coverage Report
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for potential coverage comparison needs
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18' # As specified
+
+      # --- Frontend ---
+      - name: Frontend - Install dependencies
+        working-directory: ./frontend
+        run: npm install
+
+      - name: Frontend - Run tests and generate coverage
+        working-directory: ./frontend
+        run: npm run test
+
+      - name: Debug - Check frontend coverage folder
+        working-directory: ./frontend
+        run: ls -alh coverage
+
+      - name: Frontend - Upload Coverage Report (LCOV)
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-lcov-report
+          path: frontend/coverage/lcov.info
+          if-no-files-found: error
+
+      - name: Check frontend coverage directory
+        working-directory: ./frontend
+        run: ls -R coverage || echo "No coverage folder found"
+
+      - name: Print frontend lcov file
+        working-directory: ./frontend
+        run: cat coverage/lcov.info || echo "lcov.info not found"
+
+      # --- Backend ---
+      - name: Backend - Install dependencies
+        working-directory: ./backend
+        run: npm install
+
+      - name: Backend - Run tests and generate coverage
+        working-directory: ./backend
+        run: npm run test # Ensure this script generates coverage in backend/coverage/
+
+      - name: Backend - Upload Coverage Report (LCOV)
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-lcov-report
+          path: backend/coverage/lcov.info # Specific path to lcov.info
+          if-no-files-found: error
+
+      - name: Wait for coverage file to be written
+        run: sleep 5
+
+      - name: Upload Coverage to Codecov (Frontend)
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: frontend/coverage/lcov.info
+          flags: frontend
+          fail_ci_if_error: true
+
+      - name: Upload Coverage to Codecov (Backend)
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: backend/coverage/lcov.info
+          flags: backend
+          fail_ci_if_error: true
+
+      # Reminder: Coverage Comparison Logic
+      # HW4 requires the job to fail if coverage is lower than the previous.
+      # This step is complex to implement natively in Actions without third-party tools
+      # or significant custom scripting to download, parse, and compare lcov.info files.
+      # Consider tools like Codecov or implement a script to fetch the artifact from
+      # the main branch's last successful run, parse lcov.info, and compare.
+      # For now, ensure tests pass and reports are uploaded.
+
+  code-formatter:
+    name: Auto Format Code
+    runs-on: ubuntu-latest
+    needs: test-and-coverage # Run after tests pass
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # Checkout the PR branch or the commit branch
+          ref: ${{ github.head_ref || github.ref }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Frontend - Install Dependencies & Format
+        working-directory: ./frontend
+        run: |
+          npm install
+          npm run format
+
+      - name: Backend - Install Dependencies & Format
+        working-directory: ./backend
+        run: |
+          npm install
+          npm run format
+
+      - name: Commit formatted code
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "style: auto-format code [CI]"
+          commit_user_name: github-actions[bot]
+          commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com
+          token: ${{ secrets.GITHUB_TOKEN }}
+
